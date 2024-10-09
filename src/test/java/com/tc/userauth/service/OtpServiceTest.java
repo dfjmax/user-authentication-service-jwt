@@ -17,9 +17,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class OtpServiceTest {
+
+    private static final PasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder();
 
     @Mock
     private RedisTemplate<String, String> redisTemplate;
@@ -27,13 +31,15 @@ class OtpServiceTest {
     @Mock
     private ValueOperations<String, String> valueOperations;
 
+
     private OtpService otpService;
 
     @BeforeEach
     void setUp() {
         otpService = new OtpService(
-                new OtpConfigProperties("test:%s", Duration.ZERO, 10, "ABCDEFG"),
-                redisTemplate
+                new OtpConfigProperties("test:%s", Duration.ZERO, 10),
+                redisTemplate,
+                PASSWORD_ENCODER
         );
     }
 
@@ -52,9 +58,19 @@ class OtpServiceTest {
         final var expectedOtp = "some-otp-value";
 
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get("test:" + id)).thenReturn(expectedOtp);
+        when(valueOperations.get("test:" + id)).thenReturn(PASSWORD_ENCODER.encode(expectedOtp));
 
         assertTrue(otpService.isOtpValid(id, expectedOtp));
+    }
+
+    @Test
+    void isOtpValid_noOtp_returnsFalse() {
+        final var id = UUID.randomUUID();
+
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get("test:" + id)).thenReturn(PASSWORD_ENCODER.encode("another-otp"));
+
+        assertFalse(otpService.isOtpValid(id, "test"));
     }
 
     @Test

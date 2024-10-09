@@ -89,47 +89,17 @@ The database will be created and configured automatically and during application
    mvn spring-boot:run
    ```
 
-### Test the APIs
-1. Register User
-    ```bash
-    curl -X POST http://localhost:8080/api/auth/register \
-    -H "Content-Type: application/json" \
-    -d '{
-    "username": "testuser",
-    "email": "test@example.com",
-    "password": "password123"
-    }'
-    ```
-2. Login User
-    ```bash
-    curl -X POST http://localhost:8080/api/auth/login \
-    -H "Content-Type: application/json" \
-    -d '{
-    "username": "testuser",
-    "password": "password123"
-    }'
-    ```
-3. User Profile (Protected)
-    ```bash
-    curl -X GET http://localhost:8080/api/user/me -H "Authorization: Bearer your.jwt.token.here"
-    ```
-4. Resend Verification Email
-   ```bash
-    curl -X POST http://localhost:8080/api/auth/email/resend-verification -d "email=test@example.com"
-   ```
-5. Verify Email
-   ```bash
-    curl -X GET http://localhost:8080/api/auth/email/verify -d "uid=encryptedUserId&t=otpToken"
-   ```
-6. Refresh Token
-   ```bash
-    curl -X POST http://localhost:8080/api/auth/refresh-token -d "refreshToken=your-refresh-token-here"
-   ```
-7. Logout (Revoke Refresh Token)
-   ```bash
-    curl -X POST http://localhost:8080/api/auth/logout -d "refreshToken=your-refresh-token-here"
-   ```
-   
+### Test the APIs with Postman
+
+You can use Postman to test all the available APIs. We have included a Postman collection with all the API endpoints.
+
+#### Importing the Postman Collection
+
+1. Open Postman.
+2. Click on the "Import" button in the top-left corner.
+3. [Download the Postman collection](postman/Authentication.postman_collection.json) and import it into Postman.
+4. The collection will appear in your Postman workspace, and you can execute the requests directly.
+
 ### Email Testing
 
 To view the verification emails sent by the application, visit the MailHog web interface at http://localhost:8025.

@@ -1,8 +1,10 @@
 package com.tc.userauth.service;
 
-import com.tc.userauth.dto.AuthenticationRequestDto;
-import com.tc.userauth.dto.AuthenticationResponseDto;
+import static java.time.Duration.between;
+
 import com.tc.userauth.entity.RefreshToken;
+import com.tc.userauth.entity.User;
+import com.tc.userauth.model.AuthTokens;
 import com.tc.userauth.repository.RefreshTokenRepository;
 import com.tc.userauth.repository.UserRepository;
 import java.time.Duration;
@@ -31,33 +33,46 @@ public class AuthenticationService {
 
     private final RefreshTokenRepository refreshTokenRepository;
 
-    public AuthenticationResponseDto authenticate(final AuthenticationRequestDto request) {
-        final var authToken = UsernamePasswordAuthenticationToken.unauthenticated(request.username(), request.password());
+    public AuthTokens authenticate(final String username, final String password) {
+        final var authToken = UsernamePasswordAuthenticationToken.unauthenticated(username, password);
         final var authentication = authenticationManager.authenticate(authToken);
 
-        final var accessToken = jwtService.generateToken(request.username());
-
-        final var user = userRepository.findByUsername(request.username())
+        final var user = userRepository.findByUsername(username)
                 .orElseThrow(() ->
-                        new UsernameNotFoundException("User with username [%s] not found".formatted(request.username())));
+                        new UsernameNotFoundException("User with username [%s] not found".formatted(username)));
 
-        var refreshToken = new RefreshToken();
-        refreshToken.setUser(user);
-        refreshToken.setExpiresAt(Instant.now().plus(refreshTokenTtl));
-        refreshTokenRepository.save(refreshToken);
-
-        return new AuthenticationResponseDto(accessToken, refreshToken.getId());
+        return authenticate(user);
     }
 
-    public AuthenticationResponseDto refreshToken(UUID refreshToken) {
-        final var refreshTokenEntity = refreshTokenRepository.findByIdAndExpiresAtAfter(refreshToken, Instant.now())
+    public AuthTokens authenticate(final User user) {
+        final var accessToken = jwtService.generateToken(user.getUsername());
+
+        final var refreshTokenEntity = new RefreshToken();
+        refreshTokenEntity.setUser(user);
+        refreshTokenEntity.setExpiresAt(Instant.now().plus(refreshTokenTtl));
+        refreshTokenRepository.save(refreshTokenEntity);
+
+        return new AuthTokens(accessToken, refreshTokenEntity.getId().toString(), between(Instant.now(), refreshTokenEntity.getExpiresAt()));
+    }
+
+    public AuthTokens refreshToken(final String refreshToken) {
+        final var refreshTokenEntity = refreshTokenRepository.findByIdAndExpiresAtAfter(validateRefreshTokenFormat(refreshToken), Instant.now())
                 .orElseThrow(() -> new BadCredentialsException("Invalid or expired refresh token"));
 
         final var newAccessToken = jwtService.generateToken(refreshTokenEntity.getUser().getUsername());
-        return new AuthenticationResponseDto(newAccessToken, refreshToken);
+
+        return new AuthTokens(newAccessToken, refreshToken, between(Instant.now(), refreshTokenEntity.getExpiresAt()));
     }
 
-    public void revokeRefreshToken(UUID refreshToken) {
-        refreshTokenRepository.deleteById(refreshToken);
+    public void revokeRefreshToken(String refreshToken) {
+        refreshTokenRepository.deleteById(validateRefreshTokenFormat(refreshToken));
+    }
+
+    private UUID validateRefreshTokenFormat(final String refreshToken) {
+        try {
+            return UUID.fromString(refreshToken);
+        } catch (IllegalArgumentException e) {
+            throw new BadCredentialsException("Invalid or expired refresh token");
+        }
     }
 }

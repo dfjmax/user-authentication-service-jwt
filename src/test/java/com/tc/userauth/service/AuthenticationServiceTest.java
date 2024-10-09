@@ -11,7 +11,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.tc.userauth.dto.AuthenticationRequestDto;
 import com.tc.userauth.entity.RefreshToken;
 import com.tc.userauth.repository.RefreshTokenRepository;
 import com.tc.userauth.repository.UserRepository;
@@ -56,14 +55,15 @@ class AuthenticationServiceTest {
 
     @Test
     void authenticate_validRequest_returnsJwtToken() {
-        final var request = new AuthenticationRequestDto("testUser", "password");
-        final var authToken = new UsernamePasswordAuthenticationToken(request.username(), request.password());
+        final var username = "testUser";
+        final var password = "password";
+        final var authToken = new UsernamePasswordAuthenticationToken(username, password);
         final var refreshTokenValue = UUID.randomUUID();
 
         final var authentication = mock(Authentication.class);
         when(authenticationManager.authenticate(authToken)).thenReturn(authentication);
-        when(jwtService.generateToken(request.username())).thenReturn("mocked-jwt-token");
-        when(userRepository.findByUsername(request.username())).thenReturn(Optional.of(userBuilder().build()));
+        when(jwtService.generateToken(username)).thenReturn("mocked-jwt-token");
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(userBuilder().build()));
 
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(parameters -> {
             var refreshToken = (RefreshToken) parameters.getArgument(0);
@@ -71,28 +71,28 @@ class AuthenticationServiceTest {
             return refreshToken;
         });
 
-        final var response = authenticationService.authenticate(request);
+        final var response = authenticationService.authenticate(username, password);
 
         assertThat(response.accessToken()).isEqualTo("mocked-jwt-token");
-        assertThat(response.refreshToken()).isEqualTo(refreshTokenValue);
+        assertThat(response.refreshToken()).isEqualTo(refreshTokenValue.toString());
 
         verify(authenticationManager).authenticate(authToken);
-        verify(jwtService).generateToken(request.username());
+        verify(jwtService).generateToken(username);
     }
 
     @Test
     void refreshToken_validToken_returnsNewAccessToken() {
-        final var refreshToken = refreshTokenBuilder().withId().withTestUser().build();
+        final var refreshToken = refreshTokenBuilder().withRandomId().withTestUser().build();
 
         when(refreshTokenRepository.findByIdAndExpiresAtAfter(eq(refreshToken.getId()), any(Instant.class)))
                 .thenReturn(Optional.of(refreshToken));
 
         when(jwtService.generateToken(refreshToken.getUser().getUsername())).thenReturn("new-jwt-token");
 
-        final var response = authenticationService.refreshToken(refreshToken.getId());
+        final var response = authenticationService.refreshToken(refreshToken.getId().toString());
 
         assertThat(response.accessToken()).isEqualTo("new-jwt-token");
-        assertThat(response.refreshToken()).isEqualTo(refreshToken.getId());
+        assertThat(response.refreshToken()).isEqualTo(refreshToken.getId().toString());
 
         verify(refreshTokenRepository).findByIdAndExpiresAtAfter(eq(refreshToken.getId()), any(Instant.class));
         verify(jwtService).generateToken(refreshToken.getUser().getUsername());
@@ -105,7 +105,7 @@ class AuthenticationServiceTest {
         when(refreshTokenRepository.findByIdAndExpiresAtAfter(eq(invalidRefreshToken), any(Instant.class)))
                 .thenReturn(Optional.empty());
 
-        assertThrows(AuthenticationException.class, () -> authenticationService.refreshToken(invalidRefreshToken));
+        assertThrows(AuthenticationException.class, () -> authenticationService.refreshToken(invalidRefreshToken.toString()));
 
         verify(refreshTokenRepository).findByIdAndExpiresAtAfter(eq(invalidRefreshToken), any(Instant.class));
         verifyNoInteractions(jwtService);
@@ -115,7 +115,7 @@ class AuthenticationServiceTest {
     void revokeRefreshToken_validToken_deletesToken() {
         final var refreshToken = UUID.randomUUID();
 
-        authenticationService.revokeRefreshToken(refreshToken);
+        authenticationService.revokeRefreshToken(refreshToken.toString());
 
         verify(refreshTokenRepository).deleteById(refreshToken);
     }

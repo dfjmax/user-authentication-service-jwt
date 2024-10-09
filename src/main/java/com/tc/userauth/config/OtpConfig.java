@@ -8,6 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
 @Setter
@@ -18,11 +19,11 @@ public class OtpConfig {
     private OtpConfigProperties emailVerification;
 
     @Bean
-    public OtpService emailVerificationOtpService(RedisTemplate<String, String> redisTemplate) {
-        return new OtpService(emailVerification, redisTemplate);
+    public OtpService emailVerificationOtpService(RedisTemplate<String, String> redisTemplate, PasswordEncoder passwordEncoder) {
+        return new OtpService(emailVerification, redisTemplate, passwordEncoder);
     }
 
-    public record OtpConfigProperties(String cachePrefix, Duration ttl, Integer length, String characters) {
+    public record OtpConfigProperties(String cachePrefix, Duration ttl, Integer length) {
     }
 
 }

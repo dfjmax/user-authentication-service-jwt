@@ -18,8 +18,8 @@ public class UserRegistrationMapper {
         return user;
     }
 
-    public RegistrationResponseDto toRegistrationResponseDto(final User user, final boolean emailVerificationRequired) {
-        return new RegistrationResponseDto(user.getEmail(), user.getUsername(), emailVerificationRequired);
+    public RegistrationResponseDto toResponseDto(final User user) {
+        return new RegistrationResponseDto(user.getEmail(), user.getUsername());
     }
 
 }

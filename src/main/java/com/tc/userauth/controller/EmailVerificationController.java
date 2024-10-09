@@ -1,12 +1,18 @@
 package com.tc.userauth.controller;
 
-import com.tc.userauth.dto.UserProfileDto;
-import com.tc.userauth.mapper.UserMapper;
+import static com.tc.userauth.model.AuthTokens.REFRESH_TOKEN_COOKIE_NAME;
+import static com.tc.userauth.util.CookieUtil.addCookie;
+import static org.springframework.http.HttpHeaders.SET_COOKIE;
+
+import com.tc.userauth.dto.AuthenticationResponseDto;
+import com.tc.userauth.dto.EmailVerificationRequestDto;
+import com.tc.userauth.service.AuthenticationService;
 import com.tc.userauth.service.EmailVerificationService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,19 +24,22 @@ public class EmailVerificationController {
 
     private final EmailVerificationService emailVerificationService;
 
-    private final UserMapper userMapper;
+    private final AuthenticationService authenticationService;
 
     @PostMapping("/resend-verification")
-    public ResponseEntity<Void> resendVerificationLink(@RequestParam String email) {
-        emailVerificationService.resendVerificationToken(email);
+    public ResponseEntity<Void> resendVerificationOtp(@RequestParam String email) {
+        emailVerificationService.resendEmailVerificationOtp(email);
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/verify")
-    public ResponseEntity<UserProfileDto> verifyEmail(@RequestParam("uid") String encryptedUserId, @RequestParam("t") String token) {
-        final var verifiedUser = emailVerificationService.verifyEmail(encryptedUserId, token);
+    @PostMapping("/verify")
+    public ResponseEntity<AuthenticationResponseDto> verifyOtp(@Valid @RequestBody EmailVerificationRequestDto requestDto) {
+        final var verifiedUser = emailVerificationService.verifyEmailOtp(requestDto.email(), requestDto.otp());
+        final var authTokens = authenticationService.authenticate(verifiedUser);
 
-        return ResponseEntity.ok(userMapper.toUserProfileDto(verifiedUser));
+        return ResponseEntity.ok()
+                .header(SET_COOKIE, addCookie(REFRESH_TOKEN_COOKIE_NAME, authTokens.refreshToken(), authTokens.refreshTokenTtl()).toString())
+                .body(new AuthenticationResponseDto(authTokens.accessToken()));
     }
 
 }
