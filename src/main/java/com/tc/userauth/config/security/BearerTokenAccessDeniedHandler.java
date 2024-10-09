@@ -5,6 +5,9 @@
 
 package com.tc.userauth.config.security;
 
+import static com.tc.userauth.exception.ErrorType.FORBIDDEN;
+import static com.tc.userauth.exception.ProblemDetailBuilder.forStatus;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -13,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
@@ -32,7 +34,7 @@ public final class BearerTokenAccessDeniedHandler implements AccessDeniedHandler
 
         response.setStatus(status.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        objectMapper.writeValue(response.getWriter(), ProblemDetail.forStatus(status));
+        objectMapper.writeValue(response.getWriter(), forStatus(status).withErrorType(FORBIDDEN).build());
     }
 
 }

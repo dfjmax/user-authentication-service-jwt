@@ -13,19 +13,17 @@ spring:
     redis:
       repositories:
         enabled: false
+springdoc:
+  swagger-ui:
+    use-root-path: true
 jwt:
   private-key: classpath:jwt/app.key
   public-key: classpath:jwt/app.pub
   access-token-ttl: 5m
   refresh-token-ttl: 1d
 
-email-verification:
-  base-url: http://localhost:8080/api/auth/email/verify?uid=%s&t=%s
-  required: true
-
 otp:
   email-verification:
     cache-prefix: otp:email-verification:%s
     ttl: 5m
-    characters: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
-    length: 50
+    length: 6

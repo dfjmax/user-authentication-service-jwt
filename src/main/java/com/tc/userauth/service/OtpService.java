@@ -1,26 +1,27 @@
 package com.tc.userauth.service;
 
+import static com.tc.userauth.util.OtpUtil.generateOtp;
+
 import com.tc.userauth.config.OtpConfig.OtpConfigProperties;
-import java.security.SecureRandom;
-import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @RequiredArgsConstructor
 public class OtpService {
-
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final OtpConfigProperties configProperties;
 
     private final RedisTemplate<String, String> redisTemplate;
 
+    private final PasswordEncoder passwordEncoder;
+
     public String generateAndStoreOtp(final UUID id) {
-        final var otp = generateOtp(configProperties.characters(), configProperties.length());
+        final var otp = generateOtp(configProperties.length());
         final var cacheKey = getCacheKey(id);
 
-        redisTemplate.opsForValue().set(cacheKey, otp, configProperties.ttl());
+        redisTemplate.opsForValue().set(cacheKey, passwordEncoder.encode(otp), configProperties.ttl());
 
         return otp;
     }
@@ -28,7 +29,7 @@ public class OtpService {
     public boolean isOtpValid(final UUID id, final String otp) {
         final var cacheKey = getCacheKey(id);
 
-        return Objects.equals(redisTemplate.opsForValue().get(cacheKey), otp);
+        return passwordEncoder.matches(otp, redisTemplate.opsForValue().get(cacheKey));
     }
 
     public void deleteOtp(final UUID id) {
@@ -41,12 +42,4 @@ public class OtpService {
         return configProperties.cachePrefix().formatted(id);
     }
 
-    private String generateOtp(String characters, Integer length) {
-        StringBuilder otp = new StringBuilder(length);
-        for (int i = 0; i < length; i++) {
-            int index = SECURE_RANDOM.nextInt(characters.length());
-            otp.append(characters.charAt(index));
-        }
-        return otp.toString();
-    }
 }

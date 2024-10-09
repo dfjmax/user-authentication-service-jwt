@@ -8,7 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tc.userauth.entity.User;
-import com.tc.userauth.exception.ValidationException;
+import com.tc.userauth.exception.RestErrorResponseException;
 import com.tc.userauth.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,23 +43,23 @@ class UserRegistrationServiceTest {
     }
 
     @Test
-    void registerUser_emailExists_throwsValidationException() {
+    void registerUser_emailExists_throwsException() {
         final var user = userBuilder().build();
         when(userRepository.existsByEmail(user.getEmail())).thenReturn(true);
 
         assertThatThrownBy(() -> userRegistrationService.registerUser(user))
-                .isInstanceOf(ValidationException.class);
+                .isInstanceOf(RestErrorResponseException.class);
 
         verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
-    void registerUser_usernameExists_throwsValidationException() {
+    void registerUser_usernameExists_throwsException() {
         final var user = userBuilder().build();
         when(userRepository.existsByUsername(user.getUsername())).thenReturn(true);
 
         assertThatThrownBy(() -> userRegistrationService.registerUser(user))
-                .isInstanceOf(ValidationException.class);
+                .isInstanceOf(RestErrorResponseException.class);
 
         verify(userRepository, never()).save(any(User.class));
     }

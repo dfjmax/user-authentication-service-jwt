@@ -19,7 +19,7 @@ public class TestUserBuilder {
         return new TestUserBuilder();
     }
 
-    public TestUserBuilder withId() {
+    public TestUserBuilder withRandomId() {
         user.setId(UUID.randomUUID());
         return this;
     }

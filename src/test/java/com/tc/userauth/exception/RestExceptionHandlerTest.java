@@ -20,6 +20,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestCookieException;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
@@ -57,6 +58,20 @@ class RestExceptionHandlerTest {
         assertEquals(HttpStatus.BAD_REQUEST.value(), problemDetail.getStatus());
         assertNotNull(problemDetail.getProperties());
         assertNotNull(problemDetail.getProperties().get("errors"));
+    }
+
+    @Test
+    void handleMissingRequestCookieException_missingCookie_returnsBadRequest() {
+        final var methodArgumentTypeMismatchException = mock(MissingRequestCookieException.class);
+
+        final var response = restExceptionHandler.handleMissingRequestCookieException(
+                methodArgumentTypeMismatchException
+        );
+
+        final var problemDetail = requireNonNull(response).getBody();
+        assertNotNull(problemDetail);
+        assertEquals("Required cookie is missing", problemDetail.getDetail());
+        assertEquals(HttpStatus.BAD_REQUEST.value(), problemDetail.getStatus());
     }
 
     @Test

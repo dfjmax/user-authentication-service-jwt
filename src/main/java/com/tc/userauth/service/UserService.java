@@ -1,12 +1,14 @@
 package com.tc.userauth.service;
 
+import static com.tc.userauth.exception.ErrorType.ACCOUNT_UNAVAILABLE;
+import static com.tc.userauth.exception.ProblemDetailBuilder.forStatusAndDetail;
 import static org.springframework.http.HttpStatus.GONE;
 
 import com.tc.userauth.entity.User;
+import com.tc.userauth.exception.RestErrorResponseException;
 import com.tc.userauth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -16,6 +18,10 @@ public class UserService {
 
     public User getUserByUsername(final String username) {
         return userRepository.findByUsername(username).orElseThrow(() ->
-                new ResponseStatusException(GONE, "The user account has been deleted or inactivated"));
+                new RestErrorResponseException(forStatusAndDetail(GONE, "The user account has been deleted or inactivated")
+                        .withErrorType(ACCOUNT_UNAVAILABLE)
+                        .build()
+                )
+        );
     }
 }

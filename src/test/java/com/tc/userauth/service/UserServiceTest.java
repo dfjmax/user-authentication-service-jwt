@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpStatus.GONE;
 
 import com.tc.userauth.entity.User;
+import com.tc.userauth.exception.RestErrorResponseException;
 import com.tc.userauth.repository.UserRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -15,7 +16,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.server.ResponseStatusException;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -47,9 +47,9 @@ class UserServiceTest {
 
         when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
 
-        final var exception = assertThrows(ResponseStatusException.class, () -> userService.getUserByUsername(username));
+        final var exception = assertThrows(RestErrorResponseException.class, () -> userService.getUserByUsername(username));
 
-        assertEquals("The user account has been deleted or inactivated", exception.getReason());
+        assertEquals("The user account has been deleted or inactivated", exception.getBody().getDetail());
         assertEquals(GONE, exception.getStatusCode());
     }
 }
